@@ -1,0 +1,6 @@
+../User/Severs/Src/debug_console.c:26:1:__io_putchar	16	static
+../User/Severs/Src/debug_console.c:33:5:_write	8	static
+../User/Severs/Src/debug_console.c:40:6:Console_Init	8	static
+../User/Severs/Src/debug_console.c:47:5:Console_ReadLine	0	static
+../User/Severs/Src/debug_console.c:64:6:Console_Process	0	static
+../User/Severs/Src/debug_console.c:71:6:HAL_UART_RxCpltCallback	8	static
