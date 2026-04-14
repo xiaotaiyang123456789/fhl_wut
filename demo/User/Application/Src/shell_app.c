@@ -19,11 +19,6 @@ void Shell_Execute(const char *cmd)
     if (strcmp(cmd, "checkVer") == 0) {
         printf("Software Version: %s\r\n", FIRMWARE_VERSION);
     }
-
-
-
-
-
     else if (strcmp(cmd, "reset") == 0) {
         printf("System will reset now...\r\n");
         for (volatile int i = 0; i < 100000; i++) { __NOP(); }
