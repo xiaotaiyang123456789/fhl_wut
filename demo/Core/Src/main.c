@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "can.h"
 #include "dma.h"
 #include "tim.h"
 #include "usart.h"
@@ -33,6 +34,7 @@
 #include "soft_spi.h"
 #include "SPI_LCD.h"       // LCD 驱动
 #include "key_app.h"
+#include "can_app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -127,11 +129,12 @@ int main(void)
   MX_TIM3_Init();
   MX_UART4_Init();
   MX_ADC1_Init();
+  MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim3);
 
   Console_Init();   // 初始化调试控制台（开启接收中断、打印欢迎信息）
-
+  CAN_App_Init();
 
   /* ---------- LCD12864 显示测试 ---------- */
   printf("Initializing LCD12864...\r\n");
@@ -190,8 +193,11 @@ int main(void)
 	        Shell_Execute(cmd);
 	        printf("> ");
 	    }
+
 	    // 按键扫描与 LCD 动态刷新（新增）
 	    Key_ScanAndDisplay();
+	    // CAN 报文调度发送（新增）
+	    CAN_App_Process();
 
 	    // ========== 调试代码：每秒打印 PB6 寄存器状态 ==========
 	    static uint32_t last_diag = 0;
