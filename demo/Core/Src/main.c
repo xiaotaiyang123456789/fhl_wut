@@ -18,6 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
+#include "dma.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -30,6 +32,7 @@
 #include "string.h"      // 用于字符串比较
 #include "soft_spi.h"
 #include "SPI_LCD.h"       // LCD 驱动
+#include "key_app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,6 +54,9 @@
 
 /* USER CODE BEGIN PV */
 #define FW_VERSION  "V1.0.0"   // 软件版本号
+#define ADC_CH_NUM 3
+uint16_t adc_values[ADC_CH_NUM];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -103,6 +109,7 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
+
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
@@ -116,8 +123,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM3_Init();
   MX_UART4_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim3);
 
@@ -142,6 +151,27 @@ int main(void)
   printf("LCD test done.\r\n");
   printf("> ");
 
+  // ========== 新增：启动 ADC-DMA 并初始化按键 ==========
+  printf("Starting ADC DMA for key scan...\r\n");
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values, ADC_CH_NUM);
+  Key_Init();  // 初始化按键状态和消抖结构
+  HAL_Delay(100);
+  LCD_Clear();
+
+  // 初始显示：第一行 Check，第二三行显示字母=0
+  lcd12864_display(0, 0, (uint8_t*)"Check", 5);
+  lcd12864_display(1, 0, (uint8_t*)"A=0 B=0 C=0 D=0", 15);
+  lcd12864_display(2, 0, (uint8_t*)"E=0 F=0 G=0 H=0", 15);
+  // 读取初始 parking 并显示
+  char buf[16];
+  uint8_t init_parking = (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6) == GPIO_PIN_RESET) ? 0 : 1;
+  snprintf(buf, sizeof(buf), "parking=%d", init_parking);
+  lcd12864_display(3, 0, (uint8_t*)buf, strlen(buf));
+  // ================================================
+
+  printf("> ");
+
+
 
   /* USER CODE END 2 */
 
@@ -153,15 +183,28 @@ int main(void)
 
     /* USER CODE END WHILE */
 
+    /* USER CODE BEGIN 3 */
 	    char cmd[128];
 	    if (Console_ReadLine(cmd, sizeof(cmd))) {
 	        printf("Got: %s\r\n", cmd);
 	        Shell_Execute(cmd);
 	        printf("> ");
 	    }
-	    HAL_Delay(100);
+	    // 按键扫描与 LCD 动态刷新（新增）
+	    Key_ScanAndDisplay();
 
-    /* USER CODE BEGIN 3 */
+	    // ========== 调试代码：每秒打印 PB6 寄存器状态 ==========
+	    static uint32_t last_diag = 0;
+	    if (HAL_GetTick() - last_diag > 1000) {
+	        last_diag = HAL_GetTick();
+	        uint32_t idr = GPIOB->IDR;                     // 读取整个 IDR 寄存器
+	        uint8_t idr_bit6 = (idr & GPIO_PIN_6) ? 1 : 0; // 提取第6位
+	        uint8_t hal_bit6 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6);
+	        printf("IDR=0x%08lX, bit6=%d, HAL=%d\r\n", idr, idr_bit6, hal_bit6);
+	    }
+	    // ===================================================
+
+	    HAL_Delay(10); // 10ms 扫描周期，同时保证 Shell 响应速度
   }
   /* USER CODE END 3 */
 }
@@ -174,6 +217,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -202,6 +246,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
   }
