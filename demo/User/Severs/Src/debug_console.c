@@ -39,7 +39,19 @@ int _write(int file, char *ptr, int len)
 /* ---------- 初始化 ---------- */
 void Console_Init(void)
 {
-    /* 开启 UART4 接收中断，每次接收 1 个字符 */
+    // 1. 中止可能残留的接收中断，防止干扰
+    HAL_UART_AbortReceive_IT(&huart4);
+
+    // 2. 清空 UART 接收数据寄存器（F1 系列使用 DR 寄存器）
+    __HAL_UART_FLUSH_DRREGISTER(&huart4);
+
+    // 3. 清空软件环形缓冲区
+    rx_head = 0;
+    rx_tail = 0;
+    line_ready = 0;
+    memset(rx_buf, 0, sizeof(rx_buf));
+
+    // 4. 开启 UART4 接收中断，每次接收 1 个字符
     HAL_UART_Receive_IT(&huart4, &rx_buf[rx_head], 1);
 }
 
@@ -76,6 +88,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     uint8_t ch = rx_buf[rx_head];
 
+    // 过滤无效字符：如果不是回车/换行，且不是可打印 ASCII（空格到 ~），则丢弃
+    if (ch != '\r' && ch != '\n' && (ch < 0x20 || ch > 0x7E)) {
+        // 无效字符，直接重新启动接收中断，不存入缓冲区
+        HAL_UART_Receive_IT(&huart4, &rx_buf[rx_head], 1);
+        return;
+    }
+
     /* 检测换行符：\r 或 \n 均视为命令结束 */
     if (ch == '\r' || ch == '\n') {
         if (rx_head != rx_tail) {
@@ -95,3 +114,5 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     /* 重新使能下一次接收中断 */
     HAL_UART_Receive_IT(&huart4, &rx_buf[rx_head], 1);
 }
+
+

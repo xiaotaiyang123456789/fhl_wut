@@ -11,9 +11,21 @@
  */
 void Shell_Execute(const char *cmd)
 {
-    /* 去除前导空格 */
+    // 去除前导空格
     while (*cmd == ' ') {
         cmd++;
+    }
+
+    // 如果命令长度大于1，且第一个字符不是 'c'、'r'、'h'（有效命令首字母），
+    // 且第二个字符是有效命令首字母，则跳过第一个干扰字符。
+    if (strlen(cmd) > 1) {
+        char first = cmd[0];
+        char second = cmd[1];
+        if (first != 'c' && first != 'r' && first != 'h') {
+            if (second == 'c' || second == 'r' || second == 'h') {
+                cmd++;  // 跳过干扰前缀
+            }
+        }
     }
 
     if (strcmp(cmd, "checkVer") == 0) {
@@ -22,21 +34,7 @@ void Shell_Execute(const char *cmd)
     else if (strcmp(cmd, "reset") == 0) {
         printf("System will reset now...\r\n");
         for (volatile int i = 0; i < 100000; i++) { __NOP(); }
-        __disable_irq();
-
-        // 使用 SysTick 定时器实现延时，确保复位信号有足够时间生效
-        SysTick->LOAD = 72000 - 1;  // 假设72MHz主频，延时1ms
-        SysTick->VAL = 0;
-        SysTick->CTRL = 5;          // 使能定时器，使用内核时钟
-        while (!(SysTick->CTRL & (1 << 16))); // 等待1ms
-        SysTick->CTRL = 0;
-
-        // 执行系统复位
-        SCB->AIRCR = ((0x5FA << SCB_AIRCR_VECTKEY_Pos) | SCB_AIRCR_SYSRESETREQ_Msk);
-        __DSB();
-        __ISB();
-
-        while(1);
+        NVIC_SystemReset();
     }
     else if (strcmp(cmd, "help") == 0 || strcmp(cmd, "h") == 0) {
         printf("\r\nAvailable commands:\r\n");

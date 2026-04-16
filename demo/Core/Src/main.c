@@ -137,21 +137,21 @@ int main(void)
   CAN_App_Init();   // 初始化 CAN 应用层
 
   /* ---------- LCD12864 初始化 ---------- */
-  printf("Initializing LCD12864...\r\n");
+//  printf("Initializing LCD12864...\r\n");
   Lcd_Init();
   HAL_Delay(10);
   LCD_Clear();
 
   /* ---------- 启动 ADC-DMA 并初始化按键 ---------- */
-  printf("Starting ADC DMA for key scan...\r\n");
+//  printf("Starting ADC DMA for key scan...\r\n");
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values, ADC_CH_NUM);
   Key_Init();       // 初始化按键状态和消抖结构
 
   /* ---------- 菜单模块初始化（接管 LCD 显示，默认进入 Page_CAN_Tx） ---------- */
   Menu_Init();      // 绘制默认页面并开启光标（如果处于 Tx 页）
 
-  printf("System ready. Current page: CAN_Tx\r\n");
-  printf("> ");
+//  printf("System ready. Current page: CAN_Tx\r\n");
+//  printf("> ");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -187,7 +187,7 @@ int main(void)
     CAN_App_Process();
 
     // 4. 调试代码（每秒打印 PB6 状态，可根据需要注释掉）
-    static uint32_t last_diag = 0;
+/*    static uint32_t last_diag = 0;
     if (HAL_GetTick() - last_diag > 1000) {
         last_diag = HAL_GetTick();
         uint32_t idr = GPIOB->IDR;
@@ -195,7 +195,7 @@ int main(void)
         uint8_t hal_bit6 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6);
         printf("IDR=0x%08lX, bit6=%d, HAL=%d\r\n", idr, idr_bit6, hal_bit6);
     }
-
+*/
     HAL_Delay(10); // 10ms 扫描周期，保证响应速度
     /* USER CODE END 3 */
   }
