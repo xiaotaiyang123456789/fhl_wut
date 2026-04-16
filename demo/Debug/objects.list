@@ -31,6 +31,7 @@
 "./User/Application/Src/SPI_LCD.o"
 "./User/Application/Src/can_app.o"
 "./User/Application/Src/key_app.o"
+"./User/Application/Src/menu_app.o"
 "./User/Application/Src/shell_app.o"
 "./User/Severs/Src/debug_console.o"
 "./User/Severs/Src/soft_spi.o"

@@ -31,7 +31,7 @@ static void LCD_SPI_WriteByte(uint8_t byte)
  */
 void Lcd_WriteCmd(uint8_t Cmd)
 {
-    Soft_SPI_CS_Control(1);                     // 拉低 CS，选中 LCD
+    Soft_SPI_CS_Control(1);                     // 拉高 CS，选中 LCD
     HAL_Delay(1);                               // 代替忙检测
 
     spi_buf[0] = 0xF8;                          // 命令同步标志
@@ -43,7 +43,7 @@ void Lcd_WriteCmd(uint8_t Cmd)
     spi_buf[0] = Cmd << 4;                      // 低四位
     LCD_SPI_WriteByte(spi_buf[0]);
 
-    Soft_SPI_CS_Control(0);                     // 拉高 CS，结束传输
+    Soft_SPI_CS_Control(0);                     // 拉低 CS，结束传输
 }
 
 /**
@@ -51,7 +51,7 @@ void Lcd_WriteCmd(uint8_t Cmd)
  */
 void Lcd_WriteData(uint8_t Dat)
 {
-    Soft_SPI_CS_Control(1);                     // 拉低 CS
+    Soft_SPI_CS_Control(1);                     // 拉高 CS
     HAL_Delay(1);
 
     spi_buf[0] = 0xFA;                          // 数据同步标志
@@ -63,7 +63,7 @@ void Lcd_WriteData(uint8_t Dat)
     spi_buf[0] = Dat << 4;                      // 低四位
     LCD_SPI_WriteByte(spi_buf[0]);
 
-    Soft_SPI_CS_Control(0);                     // 拉高 CS
+    Soft_SPI_CS_Control(0);                     // 拉低 CS
 }
 
 /**
@@ -201,4 +201,48 @@ void lcd12864_display(uint8_t row, uint8_t col, uint8_t* buffer, uint8_t length)
     }
 }
 
+/* USER CODE BEGIN 1 */
+
+/**
+ * @brief 开启硬件光标并闪烁
+ */
+void LCD_EnableCursor(void) {
+    Lcd_WriteCmd(0x0F);  // Display ON, Cursor ON, Blink ON
+}
+
+/**
+ * @brief 关闭硬件光标
+ */
+void LCD_DisableCursor(void) {
+    Lcd_WriteCmd(0x0C);  // Display ON, Cursor OFF, Blink OFF
+}
+
+/**
+ * @brief 设置光标到指定行和字符列（0-indexed）
+ * @param row  行号 0~3
+ * @param col  字符列号 0~15
+ */
+void LCD_SetCursor(uint8_t row, uint8_t col) {
+    uint8_t addr;
+    // 获取对应行的起始 DDRAM 地址
+    switch(row) {
+        case 0: addr = 0x80; break;
+        case 1: addr = 0x90; break;
+        case 2: addr = 0x88; break;
+        case 3: addr = 0x98; break;
+        default: return;
+    }
+    // 计算地址偏移：每2个字符为一个地址单元
+    addr += col / 2;
+    Lcd_WriteCmd(addr);
+
+    // 如果起始列为奇数，需要先写一个空格将光标推到该单元的后半部分
+    if (col % 2 == 1) {
+        Lcd_WriteData(' ');
+        // 重新设定地址，因为写数据后地址会自动加1，需手动回到原地址
+        Lcd_WriteCmd(addr);
+    }
+}
+
+/* USER CODE END 1 */
 

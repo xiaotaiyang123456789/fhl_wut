@@ -8,3 +8,6 @@
 ../User/Application/Src/SPI_LCD.c:136:6:LCD_Display_8Number	3
 ../User/Application/Src/SPI_LCD.c:158:6:LCD_Display_32Number	1
 ../User/Application/Src/SPI_LCD.c:180:6:lcd12864_display	6
+../User/Application/Src/SPI_LCD.c:209:6:LCD_EnableCursor	1
+../User/Application/Src/SPI_LCD.c:216:6:LCD_DisableCursor	1
+../User/Application/Src/SPI_LCD.c:225:6:LCD_SetCursor	6

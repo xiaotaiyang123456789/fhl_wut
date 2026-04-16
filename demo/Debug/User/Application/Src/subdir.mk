@@ -8,18 +8,21 @@ C_SRCS += \
 ../User/Application/Src/SPI_LCD.c \
 ../User/Application/Src/can_app.c \
 ../User/Application/Src/key_app.c \
+../User/Application/Src/menu_app.c \
 ../User/Application/Src/shell_app.c 
 
 OBJS += \
 ./User/Application/Src/SPI_LCD.o \
 ./User/Application/Src/can_app.o \
 ./User/Application/Src/key_app.o \
+./User/Application/Src/menu_app.o \
 ./User/Application/Src/shell_app.o 
 
 C_DEPS += \
 ./User/Application/Src/SPI_LCD.d \
 ./User/Application/Src/can_app.d \
 ./User/Application/Src/key_app.d \
+./User/Application/Src/menu_app.d \
 ./User/Application/Src/shell_app.d 
 
 
@@ -30,7 +33,7 @@ User/Application/Src/%.o User/Application/Src/%.su User/Application/Src/%.cyclo:
 clean: clean-User-2f-Application-2f-Src
 
 clean-User-2f-Application-2f-Src:
-	-$(RM) ./User/Application/Src/SPI_LCD.cyclo ./User/Application/Src/SPI_LCD.d ./User/Application/Src/SPI_LCD.o ./User/Application/Src/SPI_LCD.su ./User/Application/Src/can_app.cyclo ./User/Application/Src/can_app.d ./User/Application/Src/can_app.o ./User/Application/Src/can_app.su ./User/Application/Src/key_app.cyclo ./User/Application/Src/key_app.d ./User/Application/Src/key_app.o ./User/Application/Src/key_app.su ./User/Application/Src/shell_app.cyclo ./User/Application/Src/shell_app.d ./User/Application/Src/shell_app.o ./User/Application/Src/shell_app.su
+	-$(RM) ./User/Application/Src/SPI_LCD.cyclo ./User/Application/Src/SPI_LCD.d ./User/Application/Src/SPI_LCD.o ./User/Application/Src/SPI_LCD.su ./User/Application/Src/can_app.cyclo ./User/Application/Src/can_app.d ./User/Application/Src/can_app.o ./User/Application/Src/can_app.su ./User/Application/Src/key_app.cyclo ./User/Application/Src/key_app.d ./User/Application/Src/key_app.o ./User/Application/Src/key_app.su ./User/Application/Src/menu_app.cyclo ./User/Application/Src/menu_app.d ./User/Application/Src/menu_app.o ./User/Application/Src/menu_app.su ./User/Application/Src/shell_app.cyclo ./User/Application/Src/shell_app.d ./User/Application/Src/shell_app.o ./User/Application/Src/shell_app.su
 
 .PHONY: clean-User-2f-Application-2f-Src
 

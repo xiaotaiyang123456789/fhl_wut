@@ -24,5 +24,11 @@ void LCD_Display_8Number(uint8_t numb);                     // LCD显示8位数�
 void LCD_Display_32Number(uint32_t numb);                   // LCD显示32位数字
 void lcd12864_display(uint8_t row, uint8_t col, uint8_t* buffer, uint8_t length);
 
+// 新增光标控制函数（用于任务五菜单交互）
+void LCD_EnableCursor(void);
+void LCD_DisableCursor(void);
+void LCD_SetCursor(uint8_t row, uint8_t col);
+
 #endif /* APPLICATION_INC_SPI_LCD_H_ */
+
 

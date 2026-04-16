@@ -30,11 +30,12 @@
 #include "stdio.h"
 #include "debug_console.h"   // 服务层头文件
 #include "shell_app.h"       // 应用层头文件
-#include "string.h"      // 用于字符串比较
+#include "string.h"          // 用于字符串比较
 #include "soft_spi.h"
-#include "SPI_LCD.h"       // LCD 驱动
+#include "SPI_LCD.h"         // LCD 驱动
 #include "key_app.h"
 #include "can_app.h"
+#include "menu_app.h"        // 菜单模块
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,7 +59,6 @@
 #define FW_VERSION  "V1.0.0"   // 软件版本号
 #define ADC_CH_NUM 3
 uint16_t adc_values[ADC_CH_NUM];
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -85,12 +85,12 @@ void SystemSoftReset(void)
     SysTick->CTRL = 5;                  // 使用内核时钟，使能定时器
     while (!(SysTick->CTRL & (1 << 16))); // 等待计数到 0
     SysTick->CTRL = 0;
-    printf("welcome to 111\r\n");
+
     /* 4. 直接写 SCB 寄存器触发系统复位 */
     SCB->AIRCR = ((0x5FA << SCB_AIRCR_VECTKEY_Pos) | SCB_AIRCR_SYSRESETREQ_Msk);
     __DSB();   // 数据同步屏障
     __ISB();   // 指令同步屏障
-    printf("welcome to 222\r\n");
+
     /* 5. 若复位失败，则死循环防止程序继续执行 */
     while(1);
 }
@@ -134,83 +134,70 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim3);
 
   Console_Init();   // 初始化调试控制台（开启接收中断、打印欢迎信息）
-  CAN_App_Init();
+  CAN_App_Init();   // 初始化 CAN 应用层
 
-  /* ---------- LCD12864 显示测试 ---------- */
+  /* ---------- LCD12864 初始化 ---------- */
   printf("Initializing LCD12864...\r\n");
   Lcd_Init();
   HAL_Delay(10);
   LCD_Clear();
 
-  // 使用新接口显示
-  lcd12864_display(0, 0, (uint8_t*)"Hello LCD!", 10);
-  lcd12864_display(1, 0, (uint8_t*)"Val:123", 7);
-  lcd12864_display(2, 0, (uint8_t*)"Ver: V1.0", 9);
-  lcd12864_display(3, 0, (uint8_t*)"Num:20250414", 12);
-
-  // 示例要求的调用
-  lcd12864_display(2, 0, (uint8_t*)"Cviauto_6", 9);
-
-  printf("LCD test done.\r\n");
-  printf("> ");
-
-  // ========== 新增：启动 ADC-DMA 并初始化按键 ==========
+  /* ---------- 启动 ADC-DMA 并初始化按键 ---------- */
   printf("Starting ADC DMA for key scan...\r\n");
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values, ADC_CH_NUM);
-  Key_Init();  // 初始化按键状态和消抖结构
-  HAL_Delay(100);
-  LCD_Clear();
+  Key_Init();       // 初始化按键状态和消抖结构
 
-  // 初始显示：第一行 Check，第二三行显示字母=0
-  lcd12864_display(0, 0, (uint8_t*)"Check", 5);
-  lcd12864_display(1, 0, (uint8_t*)"A=0 B=0 C=0 D=0", 15);
-  lcd12864_display(2, 0, (uint8_t*)"E=0 F=0 G=0 H=0", 15);
-  // 读取初始 parking 并显示
-  char buf[16];
-  uint8_t init_parking = (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6) == GPIO_PIN_RESET) ? 0 : 1;
-  snprintf(buf, sizeof(buf), "parking=%d", init_parking);
-  lcd12864_display(3, 0, (uint8_t*)buf, strlen(buf));
-  // ================================================
+  /* ---------- 菜单模块初始化（接管 LCD 显示，默认进入 Page_CAN_Tx） ---------- */
+  Menu_Init();      // 绘制默认页面并开启光标（如果处于 Tx 页）
 
+  printf("System ready. Current page: CAN_Tx\r\n");
   printf("> ");
-
-
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  printf("welcome to cviauto\r\n");
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	    char cmd[128];
-	    if (Console_ReadLine(cmd, sizeof(cmd))) {
-	        printf("Got: %s\r\n", cmd);
-	        Shell_Execute(cmd);
-	        printf("> ");
-	    }
+    // 1. 处理串口 Shell 命令
+	  // 检查是否有 CAN 接收数据需要刷新 LCD
+	  if (rx_data_ready) {
+	      rx_data_ready = 0;
+	      Menu_NotifyRxDataUpdated();
+	  }
+	  if (rx_packet1_ready) {
+	      rx_packet1_ready = 0;
+	      Menu_NotifyRxDataUpdated();
+	  }
 
-	    // 按键扫描与 LCD 动态刷新（新增）
-	    Key_ScanAndDisplay();
-	    // CAN 报文调度发送（新增）
-	    CAN_App_Process();
 
-	    // ========== 调试代码：每秒打印 PB6 寄存器状态 ==========
-	    static uint32_t last_diag = 0;
-	    if (HAL_GetTick() - last_diag > 1000) {
-	        last_diag = HAL_GetTick();
-	        uint32_t idr = GPIOB->IDR;                     // 读取整个 IDR 寄存器
-	        uint8_t idr_bit6 = (idr & GPIO_PIN_6) ? 1 : 0; // 提取第6位
-	        uint8_t hal_bit6 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6);
-	        printf("IDR=0x%08lX, bit6=%d, HAL=%d\r\n", idr, idr_bit6, hal_bit6);
-	    }
-	    // ===================================================
+    char cmd[128];
+    if (Console_ReadLine(cmd, sizeof(cmd))) {
+        printf("Got: %s\r\n", cmd);
+        Shell_Execute(cmd);
+        printf("> ");
+    }
 
-	    HAL_Delay(10); // 10ms 扫描周期，同时保证 Shell 响应速度
+    // 2. 按键扫描与处理（内部包含长短按分发、页面刷新）
+    Key_ScanAndDisplay();
+
+    // 3. CAN 报文调度发送
+    CAN_App_Process();
+
+    // 4. 调试代码（每秒打印 PB6 状态，可根据需要注释掉）
+    static uint32_t last_diag = 0;
+    if (HAL_GetTick() - last_diag > 1000) {
+        last_diag = HAL_GetTick();
+        uint32_t idr = GPIOB->IDR;
+        uint8_t idr_bit6 = (idr & GPIO_PIN_6) ? 1 : 0;
+        uint8_t hal_bit6 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6);
+        printf("IDR=0x%08lX, bit6=%d, HAL=%d\r\n", idr, idr_bit6, hal_bit6);
+    }
+
+    HAL_Delay(10); // 10ms 扫描周期，保证响应速度
+    /* USER CODE END 3 */
   }
   /* USER CODE END 3 */
 }
@@ -302,3 +289,4 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
