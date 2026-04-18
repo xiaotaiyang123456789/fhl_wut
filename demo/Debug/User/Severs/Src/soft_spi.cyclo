@@ -1,4 +1,0 @@
-../User/Severs/Src/soft_spi.c:20:6:Soft_SPI_Init	1
-../User/Severs/Src/soft_spi.c:31:6:Soft_SPI_CS_Control	2
-../User/Severs/Src/soft_spi.c:43:6:Soft_SPI_WriteByte	5
-../User/Severs/Src/soft_spi.c:66:6:Soft_SPI_WriteBytes	2

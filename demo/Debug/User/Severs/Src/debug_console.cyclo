@@ -1,6 +1,0 @@
-../User/Severs/Src/debug_console.c:26:1:__io_putchar	1
-../User/Severs/Src/debug_console.c:33:5:_write	1
-../User/Severs/Src/debug_console.c:40:6:Console_Init	1
-../User/Severs/Src/debug_console.c:59:5:Console_ReadLine	4
-../User/Severs/Src/debug_console.c:76:6:Console_Process	1
-../User/Severs/Src/debug_console.c:83:6:HAL_UART_RxCpltCallback	8
